@@ -206,13 +206,28 @@ func (s *session) startPrefetch(episode model.Episode) {
 func (s *session) fetch(episode model.Episode) <-chan resolved {
 	ch := make(chan resolved, 1)
 	go func() {
-		pb, err := s.d.Service.ResolvePlayback(s.ctx, episode.ID, sdk.PlaybackOptions{})
-		if errors.Is(err, sdk.ErrDRMProtected) && pb != nil {
-			err = nil
+		pb, err := s.resolvePlayable(episode.ID)
+		if errors.Is(err, sdk.ErrAnonymousLimited) && s.d.DeviceReset != nil {
+			// 服务端对这台匿名设备返回空响应：换一台新注册的设备这一集
+			// 还能播，重试一次而不是跳过。
+			fmt.Fprintln(s.d.Stderr, "ohg: the anonymous device was rate limited; registering a new one")
+			if resetErr := s.d.DeviceReset.ResetDevice(s.ctx); resetErr == nil {
+				pb, err = s.resolvePlayable(episode.ID)
+			}
 		}
 		ch <- resolved{pb, err}
 	}()
 	return ch
+}
+
+// resolvePlayable resolves one episode, treating a protected model with key
+// material as a success.
+func (s *session) resolvePlayable(episodeID string) (*model.Playback, error) {
+	pb, err := s.d.Service.ResolvePlayback(s.ctx, episodeID, sdk.PlaybackOptions{})
+	if errors.Is(err, sdk.ErrDRMProtected) && pb != nil {
+		err = nil
+	}
+	return pb, err
 }
 
 // play waits for the episode's model and plays, saves, or reports it.

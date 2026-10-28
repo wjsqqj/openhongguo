@@ -503,7 +503,7 @@ SeriesSummary 是公开目录中的一行。ID 和标题是稳定字段。
 | `title` | `title` | string |  |
 | `description` | `description` | string |  |
 | `cover_url` | `coverUrl` | string |  |
-| `cover_expires_at` | `coverExpiresAt` | 时间（RFC 3339 字符串） | CoverExpiresAt 是 CoverURL 的签名过期时间（x-expires）；过期后要从 API 重新获取封面。 |
+| `cover_expires_at` | `coverExpiresAt` | 时间（RFC 3339 字符串） | CoverExpiresAt 是 CoverURL 的签名过期时间（x-expires）；过期后要从 API 重新获取封面。CoverURL 当前固定为 HEIC 格式（签名覆盖 URL 模板，改扩展名即失效），显示前需转码。 |
 | `episode_count` | `episodeCount` | int |  |
 | `author` | `author` | string | Author、Category 和 Words 由分类页的行填充。 |
 | `category` | `category` | string |  |

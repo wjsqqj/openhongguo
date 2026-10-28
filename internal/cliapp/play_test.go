@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/beilunyang/openhongguo/internal/history"
@@ -243,5 +244,61 @@ func TestPlayAndDownloadRefuseBooks(t *testing.T) {
 	}
 	if len(svc.resolved) != 0 || len(media.streamed) != 0 || len(media.saved) != 0 {
 		t.Fatalf("resolved %q streamed %q saved %q", svc.resolved, media.streamed, media.saved)
+	}
+}
+
+// limitedOnceService makes the first resolve of each episode hit the
+// anonymous rate limit and later ones succeed, like a throttled device
+// that a reset unblocks.
+type limitedOnceService struct {
+	seqService
+	mu   sync.Mutex
+	seen map[string]bool
+}
+
+func (s *limitedOnceService) ResolvePlayback(ctx context.Context, episodeID string, opts sdk.PlaybackOptions) (*model.Playback, error) {
+	s.mu.Lock()
+	first := !s.seen[episodeID]
+	s.seen[episodeID] = true
+	s.mu.Unlock()
+	if first {
+		return nil, sdk.ErrAnonymousLimited
+	}
+	return s.seqService.ResolvePlayback(ctx, episodeID, opts)
+}
+
+func TestPlayHealsRateLimitedDevice(t *testing.T) {
+	svc := &limitedOnceService{
+		seqService: seqService{playService: playService{episodes: threeEpisodes()}},
+		seen:       map[string]bool{},
+	}
+	resets := 0
+	media := &fakeMedia{}
+	var errOut bytes.Buffer
+	deps := Dependencies{Service: svc, Media: media, DeviceReset: fakeResetter{calls: &resets}, Stdout: io.Discard, Stderr: &errOut}
+	if code := Run(context.Background(), []string{"play", "7100000000000101", "--episode", "1"}, deps); code != ExitOK {
+		t.Fatalf("exit %d (%s)", code, errOut.String())
+	}
+	if resets != 1 {
+		t.Fatalf("resets = %d, want 1", resets)
+	}
+	if len(media.streamed) != 1 || media.streamed[0] != epURL(1) {
+		t.Fatalf("streamed = %q", media.streamed)
+	}
+	if !strings.Contains(errOut.String(), "registering a new one") {
+		t.Fatalf("stderr = %q", errOut.String())
+	}
+}
+
+func TestPlayWithoutResetterStillSkipsLimitedEpisode(t *testing.T) {
+	svc := &seqService{playService: playService{episodes: threeEpisodes()},
+		fail: map[string]error{"7100000000000201": sdk.ErrAnonymousLimited}}
+	media := &fakeMedia{}
+	deps := Dependencies{Service: svc, Media: media, Stdout: io.Discard, Stderr: io.Discard}
+	if code := Run(context.Background(), []string{"play", "7100000000000101", "--episode", "1"}, deps); code != ExitUnavailable {
+		t.Fatalf("exit %d", code)
+	}
+	if len(media.streamed) != 0 {
+		t.Fatalf("streamed = %q, want none", media.streamed)
 	}
 }

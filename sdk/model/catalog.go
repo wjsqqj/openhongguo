@@ -251,7 +251,8 @@ type SeriesSummary struct {
 	Description string `json:"description,omitempty"`
 	CoverURL    string `json:"cover_url,omitempty"`
 	// CoverExpiresAt 是 CoverURL 的签名过期时间（x-expires）；
-	// 过期后要从 API 重新获取封面。
+	// 过期后要从 API 重新获取封面。CoverURL 当前固定为 HEIC 格式
+	// （签名覆盖 URL 模板，改扩展名即失效），显示前需转码。
 	CoverExpiresAt time.Time `json:"cover_expires_at,omitempty"`
 	EpisodeCount   int       `json:"episode_count,omitempty"`
 	// Author、Category 和 Words 由分类页的行填充。
