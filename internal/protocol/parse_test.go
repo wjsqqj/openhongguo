@@ -1024,3 +1024,21 @@ func TestOneDeviceDrivesQueryRegistrationAndUserAgent(t *testing.T) {
 		t.Fatalf("default register = %v", h)
 	}
 }
+
+func TestParseSearchReadsSeriesCover(t *testing.T) {
+	raw := []byte(`{"code":0,"search_tabs":[{"tab_type":11,"data":[{"video_data":{"series_id":"7100000000000101","title":"noise","video_detail":{"series_title":"Fixture Cover Show","series_intro":"intro","series_cover":"https://media.invalid/series.jpg?x-expires=1893456000&x-signature=f","episode_cnt":9}}}]}]}`)
+	page, err := ParseSearch(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(page.Items) != 1 {
+		t.Fatalf("items = %+v", page.Items)
+	}
+	item := page.Items[0]
+	if item.CoverURL != "https://media.invalid/series.jpg?x-expires=1893456000&x-signature=f" {
+		t.Fatalf("cover = %q", item.CoverURL)
+	}
+	if item.EpisodeCount != 9 || item.Description != "intro" {
+		t.Fatalf("item = %+v", item)
+	}
+}

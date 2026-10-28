@@ -15,7 +15,8 @@
               "video_detail": {
                 "series_title": "Fixture Lantern Court",
                 "series_intro": "A public synopsis.",
-                "episode_cnt": 2
+                "episode_cnt": 2,
+                "series_cover": "https://media.invalid/series.jpg?x-expires=1893456000&x-signature=f"
               }
             }
           ]
