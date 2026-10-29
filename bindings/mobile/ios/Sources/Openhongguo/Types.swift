@@ -1214,7 +1214,8 @@ public struct Series: Codable, Hashable, Sendable {
     public var description: String
     public var coverUrl: String
     /// CoverExpiresAt 是 CoverURL 的签名过期时间（x-expires）；
-    /// 过期后要从 API 重新获取封面。
+    /// 过期后要从 API 重新获取封面。CoverURL 当前固定为 HEIC 格式
+    /// （签名覆盖 URL 模板，改扩展名即失效），显示前需转码。
     public var coverExpiresAt: String
     public var episodeCount: Int
     /// Author、Category 和 Words 由分类页的行填充。
@@ -1398,7 +1399,8 @@ public struct SeriesSummary: Codable, Hashable, Sendable {
     public var description: String
     public var coverUrl: String
     /// CoverExpiresAt 是 CoverURL 的签名过期时间（x-expires）；
-    /// 过期后要从 API 重新获取封面。
+    /// 过期后要从 API 重新获取封面。CoverURL 当前固定为 HEIC 格式
+    /// （签名覆盖 URL 模板，改扩展名即失效），显示前需转码。
     public var coverExpiresAt: String
     public var episodeCount: Int
     /// Author、Category 和 Words 由分类页的行填充。
